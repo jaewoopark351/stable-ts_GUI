@@ -1,0 +1,97 @@
+name: test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  whisper-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: '3.8'
+            pytorch-version: 1.10.1
+            numpy-requirement: "'numpy<2'"
+            tokenizers-requirement: "'tokenizers<=0.20.3'"
+            transformers-requirement: "'transformers<=4.46.3'"
+          - python-version: '3.8'
+            pytorch-version: 1.13.1
+            numpy-requirement: "'numpy<2'"
+            tokenizers-requirement: "'tokenizers<=0.20.3'"
+            transformers-requirement: "'transformers<=4.46.3'"
+          - python-version: '3.8'
+            pytorch-version: 2.0.1
+            numpy-requirement: "'numpy<2'"
+            tokenizers-requirement: "'tokenizers<=0.20.3'"
+            transformers-requirement: "'transformers<=4.46.3'"
+          - python-version: '3.9'
+            pytorch-version: 2.2.2
+            numpy-requirement: "'numpy<2'"
+            tokenizers-requirement: "'tokenizers'"
+            transformers-requirement: "'transformers'"
+          - python-version: '3.10'
+            pytorch-version: 2.2.2
+            numpy-requirement: "'numpy<2'"
+            tokenizers-requirement: "'tokenizers'"
+            transformers-requirement: "'transformers'"
+          - python-version: '3.11'
+            pytorch-version: 2.3.1
+            numpy-requirement: "'numpy'"
+            tokenizers-requirement: "'tokenizers'"
+            transformers-requirement: "'transformers'"
+          - python-version: '3.12'
+            pytorch-version: 2.4.1
+            numpy-requirement: "'numpy'"
+            tokenizers-requirement: "'tokenizers'"
+            transformers-requirement: "'transformers'"
+          - python-version: '3.12'
+            pytorch-version: 2.5.0
+            numpy-requirement: "'numpy'"
+            tokenizers-requirement: "'tokenizers'"
+            transformers-requirement: "'transformers'"
+          - python-version: '3.12'
+            pytorch-version: 2.6.0
+            numpy-requirement: "'numpy'"
+            tokenizers-requirement: "'tokenizers'"
+            transformers-requirement: "'transformers'"
+    steps:
+      - uses: conda-incubator/setup-miniconda@v3
+      - run: conda install -n test ffmpeg python=${{ matrix.python-version }}
+      - uses: actions/checkout@v4
+      - run: echo "$CONDA/envs/test/bin" >> $GITHUB_PATH
+      - run: pip3 install . ${{ matrix.numpy-requirement }} torch==${{ matrix.pytorch-version }}+cpu --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+      - run: python test/test_transcribe.py
+      - run: python test/test_align.py
+      - run: python test/test_refine.py
+      - run: python test/test_locate.py
+      - run: pip3 install .["fw"] ${{ matrix.tokenizers-requirement }}
+      - run: python test/test_transcribe.py load_faster_whisper
+      - run: python test/test_align.py load_faster_whisper
+      - run: python test/test_refine.py load_faster_whisper
+      - run: pip3 install .["hf"] ${{ matrix.transformers-requirement }}
+      - run: python test/test_transcribe.py load_hf_whisper
+      - run: python test/test_align.py load_hf_whisper
+      - run: python test/test_refine.py load_hf_whisper
+
+  mlx-test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install FFmpeg
+        run: brew install ffmpeg
+      - name: Install Package with MLX dependencies
+        run: pip3 install .["mlx"]
+      - name: Run MLX transcribe tests
+        run: python test/test_transcribe.py load_mlx_whisper
+      - name: Run MLX align tests
+        run: python test/test_align.py load_mlx_whisper
+      - name: Run MLX refine tests
+        run: python test/test_refine.py load_mlx_whisper

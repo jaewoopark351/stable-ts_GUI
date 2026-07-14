@@ -1,0 +1,5 @@
+# Additional dependencies for the Windows GUI and optional vocal separation.
+# PyTorch is installed through stable-ts itself. If CUDA is needed, install the
+# correct PyTorch build for your driver before running the editable install.
+gradio>=4.44,<6
+demucs>=4.0.1
