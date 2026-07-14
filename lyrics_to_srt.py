@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import gc
 import importlib.util
 import shutil
 import sys
@@ -105,6 +106,36 @@ def emit_log(logs: list[str], message: str, callback: Optional[Callable[[str], N
         callback(message)
 
 
+def clear_model_cache(
+    logs: Optional[list[str]] = None,
+    callback: Optional[Callable[[str], None]] = None,
+) -> None:
+    if not MODEL_CACHE:
+        return
+
+    cached_keys = list(MODEL_CACHE)
+    cached_models = ", ".join(f"{model_name} / {device}" for model_name, device in cached_keys)
+    if logs is not None:
+        emit_log(logs, f"기존 모델 캐시 해제: {cached_models}", callback)
+
+    MODEL_CACHE.clear()
+    gc.collect()
+
+    try:
+        import torch
+    except ModuleNotFoundError:
+        if logs is not None:
+            emit_log(logs, "모델 캐시 정리 완료", callback)
+        return
+
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        if logs is not None:
+            emit_log(logs, "CUDA 모델 메모리 캐시 정리 완료", callback)
+    elif logs is not None:
+        emit_log(logs, "모델 캐시 정리 완료", callback)
+
+
 def resolve_device(device: str, logs: list[str], callback: Optional[Callable[[str], None]] = None) -> str:
     import torch
 
@@ -180,12 +211,15 @@ def select_model_for_hardware(
 
 
 def get_model(model_name: str, device: str, logs: list[str], callback: Optional[Callable[[str], None]] = None):
-    import stable_whisper
-
     cache_key = (model_name, device)
-    if cache_key in MODEL_CACHE:
+    if cache_key in MODEL_CACHE and len(MODEL_CACHE) == 1:
         emit_log(logs, f"모델 캐시 재사용: {model_name} / {device}", callback)
         return MODEL_CACHE[cache_key]
+
+    if MODEL_CACHE:
+        clear_model_cache(logs, callback)
+
+    import stable_whisper
 
     emit_log(logs, f"모델 로딩 시작: {model_name} / {device}", callback)
     model = stable_whisper.load_model(model_name, device=device)
