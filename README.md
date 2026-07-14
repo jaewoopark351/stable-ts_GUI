@@ -16,23 +16,44 @@
 
 전역 `python` 또는 전역 `pip`로 실행하지 마세요.
 
+설치 순서는 Python 3.11 확인, `.venv` 생성 및 활성화, pip/setuptools/wheel 업데이트, NVIDIA GPU 확인, PyTorch 선설치 및 검증, stable-ts editable 설치, Gradio 및 GUI 의존성 설치, 최종 import/pip 검증 순서입니다.
+
 ## CUDA 및 PyTorch
 
-`install_windows.bat`은 `nvidia-smi`를 먼저 확인하고, 설치 후 `torch.cuda.is_available()` 결과를 출력합니다. CUDA용 PyTorch가 필요한 경우에는 현재 NVIDIA 드라이버와 Python 3.11에 맞는 PyTorch 설치 명령을 먼저 확인한 뒤 진행하세요. CPU 전용 PyTorch를 실수로 설치하지 않도록 주의하세요.
+`install_windows.bat`은 `pip install -e .`보다 먼저 PyTorch를 설치합니다. NVIDIA GPU가 감지되면 CUDA 12.8용 PyTorch를 먼저 설치하고, `torch.cuda.is_available()`가 `True`인지 검증한 뒤에만 stable-ts와 GUI 의존성 설치를 계속합니다.
 
-RTX 5070 Ti에서 GPU를 사용하려면 `.venv` 안의 PyTorch가 CUDA 빌드여야 합니다. 현재 공식 PyTorch 설치 페이지 기준 Windows + pip에서는 CUDA 12.8 빌드를 선택할 수 있습니다.
+현재 Windows 설치 스크립트에서 사용하는 CUDA PyTorch 명령은 다음과 같습니다.
 
 ```bat
 .\.venv\Scripts\python.exe -m pip install --upgrade --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 ```
 
-설치 후 반드시 확인하세요.
+NVIDIA GPU가 없는 PC에서는 CPU 전용 PyTorch를 설치하고 CPU 모드임을 명확히 출력합니다.
 
 ```bat
-.\.venv\Scripts\python.exe -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.version.cuda)"
+.\.venv\Scripts\python.exe -m pip install --upgrade --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 ```
 
-`torch.cuda.is_available()`가 `True`가 아니면 GPU를 쓰지 못합니다.
+NVIDIA GPU가 감지되었는데 CUDA 검증이 실패하면 설치를 중단합니다. GPU가 없는 CPU 전용 환경과, NVIDIA GPU는 있으나 CUDA가 비활성인 환경을 구분하기 위한 동작입니다.
+
+설치 스크립트의 PyTorch 검증은 다음 내용을 출력합니다.
+
+```python
+import torch
+
+print(torch.__version__)
+print(torch.version.cuda)
+print(torch.cuda.is_available())
+print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CUDA unavailable")
+```
+
+직접 확인하려면 다음 명령을 사용할 수 있습니다.
+
+```bat
+.\.venv\Scripts\python.exe scripts\verify_torch_install.py --expected cuda --summary
+```
+
+CPU 전용 환경에서는 `--expected cpu`를 사용하세요.
 
 ## GUI 실행
 
@@ -121,7 +142,8 @@ Demucs가 설치되어 있지 않습니다.
 ```bat
 .\.venv\Scripts\python.exe -c "import sys; print(sys.executable)"
 .\.venv\Scripts\python.exe -c "import stable_whisper; print('stable-ts import OK')"
-.\.venv\Scripts\python.exe -c "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.version.cuda)"
+.\.venv\Scripts\python.exe -c "import torch; print(torch.__version__); print(torch.version.cuda); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CUDA unavailable')"
+.\.venv\Scripts\python.exe scripts\verify_torch_install.py --expected cuda --summary
 .\.venv\Scripts\python.exe lyrics_to_srt.py --help
 .\.venv\Scripts\python.exe -m pip check
 ```

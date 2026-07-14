@@ -1,6 +1,6 @@
 # Agent Rules
 
-- Work only inside `C:\Vtuber_Souorce_Code\stable-ts-main`.
+- Work only inside `C:\Vtuber_Souorce_Code\stable-ts_GUI`.
 - Do not modify parent folders or sibling projects.
 - Keep the original stable-ts source, license, and credits intact unless the user explicitly approves a minimal source change.
 - Use only the project virtual environment at `.venv`.
