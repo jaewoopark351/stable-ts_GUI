@@ -147,3 +147,14 @@ Demucs가 설치되어 있지 않습니다.
 .\.venv\Scripts\python.exe lyrics_to_srt.py --help
 .\.venv\Scripts\python.exe -m pip check
 ```
+
+## Credits
+
+이 프로젝트는 Jian이 개발한 [stable-ts](https://github.com/jianfch/stable-ts)를 기반으로 재구성했습니다.
+
+- 원본 프로젝트: [jianfch/stable-ts](https://github.com/jianfch/stable-ts)
+- 원본 개발자: Jian (`jianfch`)
+- Windows GUI 및 음악 + 가사 TXT → SRT 워크플로 재구성: [jaewoopark351](https://github.com/jaewoopark351)
+- 라이선스: MIT License
+
+원본 stable-ts의 저작권 고지와 MIT 라이선스는 이 저장소의 `LICENSE` 파일에 유지됩니다.
